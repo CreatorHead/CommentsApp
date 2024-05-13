@@ -18,26 +18,26 @@ import lombok.Data;
 @Table(name = "reactions")
 @Data
 public class CommentReaction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "comment_id", nullable = false)
-    private Comment comment;
+	@ManyToOne
+	@JoinColumn(name = "comment_id", nullable = false)
+	private Comment comment;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+	@ManyToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ReactionType type;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private ReactionType type;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt = LocalDateTime.now();
 
-    public enum ReactionType {
-        LIKE, DISLIKE
-    }
+	public enum ReactionType {
+		LIKE, DISLIKE
+	}
 }

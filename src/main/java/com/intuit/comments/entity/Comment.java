@@ -1,6 +1,5 @@
 package com.intuit.comments.entity;
 
-
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -17,25 +16,25 @@ import lombok.Data;
 @Table(name = "comments")
 @Data
 public class Comment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+	@ManyToOne
+	@JoinColumn(name = "post_id", nullable = false)
+	private Post post;
 
-    @ManyToOne
-    @JoinColumn(name = "parent_id")
-    private Comment parent;
+	@ManyToOne
+	@JoinColumn(name = "parent_id")
+	private Comment parent;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+	@ManyToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
 
-    @Column(nullable = false)
-    private String content;
+	@Column(nullable = false)
+	private String content;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt = LocalDateTime.now();
 }

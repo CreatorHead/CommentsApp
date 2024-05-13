@@ -17,27 +17,25 @@ import com.intuit.comments.dto.PostDTO;
 import com.intuit.comments.entity.Post;
 import com.intuit.comments.service.PostService;
 
-
 @RestController
 @RequestMapping("/api")
 public class PostController {
 
-    @Autowired private PostService postService;
-    
-    @PostMapping("/post")
-    public ResponseEntity<?> addPost(@RequestBody PostDTO postDTO) {
-        return ResponseEntity.status(201).body(postService.createPost(postDTO));
-    }
-    
-    
-    @GetMapping("/get/posts/by-user")
-    public ResponseEntity<?> getPostByUser(
-            @RequestParam("userId") Long userId,
-            @RequestParam(value = "pageNumber", defaultValue = "0") Integer pageNumber,
-            @RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
+	@Autowired
+	private PostService postService;
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        List<Post> posts = postService.getPostsByUser(userId, pageable);
-        return ResponseEntity.ok(posts);
-    }
+	@PostMapping("/post")
+	public ResponseEntity<?> addPost(@RequestBody PostDTO postDTO) {
+		return ResponseEntity.status(201).body(postService.createPost(postDTO));
+	}
+
+	@GetMapping("/get/posts/by-user")
+	public ResponseEntity<?> getPostByUser(@RequestParam("userId") Long userId,
+			@RequestParam(value = "pageNumber", defaultValue = "0") Integer pageNumber,
+			@RequestParam(value = "pageSize", defaultValue = "5") Integer pageSize) {
+
+		Pageable pageable = PageRequest.of(pageNumber, pageSize);
+		List<Post> posts = postService.getPostsByUser(userId, pageable);
+		return ResponseEntity.ok(posts);
+	}
 }

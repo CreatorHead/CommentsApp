@@ -16,17 +16,17 @@ import lombok.Data;
 @Table(name = "posts")
 @Data
 public class Post {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+	@ManyToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
 
-    private String title;
-    private String content;
+	private String title;
+	private String content;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt = Instant.now();
+	@Column(name = "created_at", nullable = false)
+	private Instant createdAt = Instant.now();
 }

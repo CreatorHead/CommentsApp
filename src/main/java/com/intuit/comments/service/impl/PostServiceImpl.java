@@ -12,21 +12,22 @@ import com.intuit.comments.repo.PostRepository;
 import com.intuit.comments.repo.UserRepository;
 import com.intuit.comments.service.PostService;
 
-
 @Service
-public class PostServiceImpl implements PostService{
-	
-	@Autowired PostRepository postRepository;
-	
-	@Autowired UserRepository userRepository;
+public class PostServiceImpl implements PostService {
+
+	@Autowired
+	PostRepository postRepository;
+
+	@Autowired
+	UserRepository userRepository;
 
 	@Override
 	public Post createPost(PostDTO postDTO) {
 		Post newPost = postDtoToPost(postDTO);
 		return userRepository.findById(postDTO.getUserId()).map(user -> {
 			newPost.setUser(user);
-            return postRepository.save(newPost);
-        }).orElseThrow(() -> new RuntimeException("User not found with ID: " + postDTO.getUserId()));
+			return postRepository.save(newPost);
+		}).orElseThrow(() -> new RuntimeException("User not found with ID: " + postDTO.getUserId()));
 	}
 
 	private Post postDtoToPost(PostDTO postDTO) {
@@ -37,22 +38,13 @@ public class PostServiceImpl implements PostService{
 		post.setUser(post.getUser());
 		return post;
 	}
-	
-//	public List<Post> getPostsByUser(Long userId, Integer pageNumber, Integer pageSize) {
-//		// Ensure pageNumber starts from 0
-//        int offset = (pageNumber - 1) * pageSize;  // Adjust if pageNumber starts at 1
-//        int limit = pageSize;
-//        List<Post> posts = postRepository.findByUserIdOrderByCreatedAtDesc(userId, offset, limit);
-//        return posts;
-//    }
-	
+
 	public List<Post> getPostsByUser(Long userId, Pageable pageable) {
 		// Ensure pageNumber starts from 0
-        int offset = (pageable.getPageNumber() - 1) * pageable.getPageSize();  // Adjust if pageNumber starts at 1
-        int limit = pageable.getPageSize();
-        List<Post> posts = postRepository.findByUserIdOrderByCreatedAtDesc(userId, offset, limit);
-        return posts;
-    }
-	
-	
+		int offset = (pageable.getPageNumber() - 1) * pageable.getPageSize(); // Adjust if pageNumber starts at 1
+		int limit = pageable.getPageSize();
+		List<Post> posts = postRepository.findByUserIdOrderByCreatedAtDesc(userId, offset, limit);
+		return posts;
+	}
+
 }

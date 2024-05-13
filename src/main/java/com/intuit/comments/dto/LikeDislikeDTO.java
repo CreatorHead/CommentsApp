@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class LikeDislikeDTO {
-	
-    private Long commentId;
-    private Long userId;
-    private Boolean isLike; // true for like, false for dislike
-    
+
+	private Long commentId;
+	private Long userId;
+	private Boolean isLike; // true for like, false for dislike
+
 }
