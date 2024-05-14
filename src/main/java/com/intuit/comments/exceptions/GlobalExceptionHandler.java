@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import jakarta.persistence.EntityNotFoundException;
 
 /**
  * Centralized exception handling for the application, intercepting uncaught
@@ -57,6 +60,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<String> handleResourceNotFoundException(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Resource not found...");
+    }
+    
+    
+    /**
+     * Handles MethodArgumentTypeMismatchException, which occurs when the method argument is of an incorrect type.
+     *
+     * @param ex the MethodArgumentTypeMismatchException thrown when an argument of incorrect type is passed
+     * @return ResponseEntity with an error message and HTTP status BAD_REQUEST
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<String> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return new ResponseEntity<>("Invalid post ID format", HttpStatus.BAD_REQUEST);
+    }
+    
+    
+    /**
+     * Handles EntityNotFoundException, which occurs when the requested entity is not found.
+     *
+     * @param ex the EntityNotFoundException thrown when an entity is not found
+     * @return ResponseEntity with the exception message and HTTP status NOT_FOUND
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<String> handleEntityNotFound(EntityNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
 }

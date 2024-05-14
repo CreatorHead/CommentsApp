@@ -16,13 +16,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.intuit.comments.dto.CommentDTO;
 import com.intuit.comments.entity.Comment;
 import com.intuit.comments.exceptions.CommentNotFoundException;
 import com.intuit.comments.service.CommentService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Handles requests related to comments on posts and replies. Provides endpoints
@@ -61,9 +64,23 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/recent/{postId}")
 	public ResponseEntity<?> findByPostIdWithRecentComments(@PathVariable("postId") Long postId, Pageable pageable) {
-		logger.info("Fetching recent comments for post ID: {}", postId);
-		return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
-	}
+        logger.info("Fetching recent comments for post ID: {}", postId);
+
+        // Validate postId
+        if (postId == null || postId <= 0) {
+            return new ResponseEntity<>("Invalid post ID", HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
+        } catch (EntityNotFoundException ex) {
+            logger.error("Post not found: {}", postId, ex);
+            return new ResponseEntity<>("Post not found", HttpStatus.NOT_FOUND);
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching comments for post ID: {}", postId, ex);
+            return new ResponseEntity<>("An internal error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 	/**
 	 * Retrieves the most recent replies for a specific comment, sorted by creation
@@ -76,9 +93,25 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/recent/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithRecentReplies(@PathVariable("parentId") Long parentId,
-			Pageable pageable) {
-		logger.info("Fetching recent replies for parent comment ID: {}", parentId);
-		return ResponseEntity.ok(commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable));
+	        Pageable pageable) {
+	    logger.info("Fetching recent replies for parent comment ID: {}", parentId);
+	    
+	    // Validate parentId
+	    if (parentId == null || parentId <= 0) {
+	        logger.error("Invalid parent comment ID: {}", parentId);
+	        return ResponseEntity.badRequest().body("Invalid parent comment ID");
+	    }
+
+	    try {
+	        List<Comment> replies = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
+	        return ResponseEntity.ok(replies);
+	    } catch (CommentNotFoundException e) {
+	        logger.error("Comment not found for ID: {}", parentId, e);
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
+	    } catch (Exception e) {
+	        logger.error("Error fetching replies for parent comment ID: {}", parentId, e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching replies");
+	    }
 	}
 
 	/**
@@ -91,10 +124,21 @@ public class CommentController {
 	 * @return ResponseEntity containing a page of top comments or an error message.
 	 */
 	@GetMapping("/comments/top/{postId}")
-	public ResponseEntity<?> findByPostIdWithTopComments(@PathVariable("postId") Long postId, Pageable pageable) {
-		logger.info("Fetching top comments for post ID: {}", postId);
-		return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
-	}
+	public ResponseEntity<?> findByPostIdWithTopComments(
+            @PathVariable("postId") @NotNull Long postId,
+            Pageable pageable) {
+        logger.info("Fetching top comments for post ID: {}", postId);
+        try {
+            var comments = commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+            return ResponseEntity.ok(comments);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid postId: {}", postId, e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid postId", e);
+        } catch (Exception e) {
+            logger.error("Error fetching top comments for post ID: {}", postId, e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching top comments", e);
+        }
+    }
 
 	/**
 	 * Retrieves the top replies for a specific parent comment, typically based on
