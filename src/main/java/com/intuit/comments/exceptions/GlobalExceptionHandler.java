@@ -45,5 +45,18 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
+    
+    /**
+     * Handles ResourceNotFoundException thrown by any controller method in the application.
+     * This method ensures that a proper HTTP response is sent back to the client with a 404 status code
+     * and the exception's message as the response body.
+     * 
+     * @param ex the ResourceNotFoundException thrown by a controller method
+     * @return ResponseEntity containing the exception message and HTTP status 404 (Not Found)
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Resource not found...");
+    }
 
 }

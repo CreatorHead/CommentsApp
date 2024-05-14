@@ -1,9 +1,13 @@
 package com.intuit.comments.controller;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.intuit.comments.dto.CommentDTO;
+import com.intuit.comments.entity.Comment;
+import com.intuit.comments.exceptions.CommentNotFoundException;
 import com.intuit.comments.service.CommentService;
 
 import jakarta.validation.Valid;
@@ -102,8 +108,34 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/top/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithTopReplies(@PathVariable("parentId") Long parentId, Pageable pageable) {
-		logger.info("Fetching top replies for parent comment ID: {}", parentId);
-		return ResponseEntity.ok(commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable));
-	}
+		try {
+	        logger.info("Fetching top replies for parent comment ID: {}", parentId);
+	        
+	        // Validate the parentId
+	        if (parentId == null || parentId <= 0) {
+	            logger.error("Invalid parent comment ID: {}", parentId);
+	            return ResponseEntity.badRequest().body("Invalid parent comment ID");
+	        }
+
+	        // Fetch the comments
+	        List<Comment> comments = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
+	        
+	        // If no comments are found, return 404
+	        if (comments.isEmpty()) {
+	            logger.info("No comments found for parent comment ID: {}", parentId);
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No comments found");
+	        }
+	        
+	        return ResponseEntity.ok(comments);
+	    } catch (CommentNotFoundException e) {
+	        logger.error("Parent comment not found: {}", parentId, e);
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
+	    } catch (DataAccessException e) {
+	        logger.error("Database error while fetching comments for parent ID: {}", parentId, e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error");
+	    } catch (Exception e) {
+	        logger.error("An unexpected error occurred", e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+	    }	}
 
 }
