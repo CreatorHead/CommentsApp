@@ -1,8 +1,11 @@
 package com.intuit.comments.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,13 +16,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.intuit.comments.dto.CommentDTO;
 import com.intuit.comments.service.CommentService;
 
+import jakarta.validation.Valid;
+
 /**
  * Handles requests related to comments on posts and replies. Provides endpoints
  * for adding comments, and retrieving recent or top comments and replies.
  */
 @RestController
 @RequestMapping("/api")
+@Validated
 public class CommentController {
+
+	private static final Logger logger = LoggerFactory.getLogger(CommentController.class);
 
 	@Autowired
 	private CommentService commentService;
@@ -31,7 +39,8 @@ public class CommentController {
 	 * @return ResponseEntity containing the added comment or an error message.
 	 */
 	@PostMapping("/comments")
-	public ResponseEntity<?> addComment(@RequestBody CommentDTO commentDTO) {
+	public ResponseEntity<?> addComment(@Valid @RequestBody CommentDTO commentDTO) {
+		logger.info("Adding a new comment: {}", commentDTO);
 		return ResponseEntity.ok(commentService.addComment(commentDTO));
 	}
 
@@ -46,6 +55,7 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/recent/{postId}")
 	public ResponseEntity<?> findByPostIdWithRecentComments(@PathVariable("postId") Long postId, Pageable pageable) {
+		logger.info("Fetching recent comments for post ID: {}", postId);
 		return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
 	}
 
@@ -61,6 +71,7 @@ public class CommentController {
 	@GetMapping("/comments/recent/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithRecentReplies(@PathVariable("parentId") Long parentId,
 			Pageable pageable) {
+		logger.info("Fetching recent replies for parent comment ID: {}", parentId);
 		return ResponseEntity.ok(commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable));
 	}
 
@@ -75,6 +86,7 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/top/{postId}")
 	public ResponseEntity<?> findByPostIdWithTopComments(@PathVariable("postId") Long postId, Pageable pageable) {
+		logger.info("Fetching top comments for post ID: {}", postId);
 		return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
 	}
 
@@ -90,6 +102,7 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/top/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithTopReplies(@PathVariable("parentId") Long parentId, Pageable pageable) {
+		logger.info("Fetching top replies for parent comment ID: {}", parentId);
 		return ResponseEntity.ok(commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable));
 	}
 
