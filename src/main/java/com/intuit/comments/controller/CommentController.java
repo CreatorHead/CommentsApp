@@ -25,6 +25,7 @@ import com.intuit.comments.service.CommentService;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import jakarta.validation.ValidationException;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -50,7 +51,19 @@ public class CommentController {
 	@PostMapping("/comments")
 	public ResponseEntity<?> addComment(@Valid @RequestBody CommentDTO commentDTO) {
 		logger.info("Adding a new comment: {}", commentDTO);
-		return ResponseEntity.ok(commentService.addComment(commentDTO));
+		try {
+			Comment addedComment = commentService.addComment(commentDTO);
+			return ResponseEntity.ok(addedComment);
+		} catch (CommentNotFoundException e) {
+			logger.error("Comment not found: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Comment not found");
+		} catch (ValidationException e) {
+			logger.error("Validation failed: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Validation failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("An error occurred while adding the comment: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
+		}
 	}
 
 	/**
@@ -64,23 +77,23 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/recent/{postId}")
 	public ResponseEntity<?> findByPostIdWithRecentComments(@PathVariable("postId") Long postId, Pageable pageable) {
-        logger.info("Fetching recent comments for post ID: {}", postId);
+		logger.info("Fetching recent comments for post ID: {}", postId);
 
-        // Validate postId
-        if (postId == null || postId <= 0) {
-            return new ResponseEntity<>("Invalid post ID", HttpStatus.BAD_REQUEST);
-        }
+		// Validate postId
+		if (postId == null || postId <= 0) {
+			return new ResponseEntity<>("Invalid post ID", HttpStatus.BAD_REQUEST);
+		}
 
-        try {
-            return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
-        } catch (EntityNotFoundException ex) {
-            logger.error("Post not found: {}", postId, ex);
-            return new ResponseEntity<>("Post not found", HttpStatus.NOT_FOUND);
-        } catch (Exception ex) {
-            logger.error("An error occurred while fetching comments for post ID: {}", postId, ex);
-            return new ResponseEntity<>("An internal error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+		try {
+			return ResponseEntity.ok(commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable));
+		} catch (EntityNotFoundException ex) {
+			logger.error("Post not found: {}", postId, ex);
+			return new ResponseEntity<>("Post not found", HttpStatus.NOT_FOUND);
+		} catch (Exception ex) {
+			logger.error("An error occurred while fetching comments for post ID: {}", postId, ex);
+			return new ResponseEntity<>("An internal error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 
 	/**
 	 * Retrieves the most recent replies for a specific comment, sorted by creation
@@ -93,25 +106,26 @@ public class CommentController {
 	 */
 	@GetMapping("/comments/recent/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithRecentReplies(@PathVariable("parentId") Long parentId,
-	        Pageable pageable) {
-	    logger.info("Fetching recent replies for parent comment ID: {}", parentId);
-	    
-	    // Validate parentId
-	    if (parentId == null || parentId <= 0) {
-	        logger.error("Invalid parent comment ID: {}", parentId);
-	        return ResponseEntity.badRequest().body("Invalid parent comment ID");
-	    }
+			Pageable pageable) {
+		logger.info("Fetching recent replies for parent comment ID: {}", parentId);
 
-	    try {
-	        List<Comment> replies = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
-	        return ResponseEntity.ok(replies);
-	    } catch (CommentNotFoundException e) {
-	        logger.error("Comment not found for ID: {}", parentId, e);
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
-	    } catch (Exception e) {
-	        logger.error("Error fetching replies for parent comment ID: {}", parentId, e);
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching replies");
-	    }
+		// Validate parentId
+		if (parentId == null || parentId <= 0) {
+			logger.error("Invalid parent comment ID: {}", parentId);
+			return ResponseEntity.badRequest().body("Invalid parent comment ID");
+		}
+
+		try {
+			List<Comment> replies = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
+			return ResponseEntity.ok(replies);
+		} catch (CommentNotFoundException e) {
+			logger.error("Comment not found for ID: {}", parentId, e);
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
+		} catch (Exception e) {
+			logger.error("Error fetching replies for parent comment ID: {}", parentId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("An error occurred while fetching replies");
+		}
 	}
 
 	/**
@@ -124,21 +138,20 @@ public class CommentController {
 	 * @return ResponseEntity containing a page of top comments or an error message.
 	 */
 	@GetMapping("/comments/top/{postId}")
-	public ResponseEntity<?> findByPostIdWithTopComments(
-            @PathVariable("postId") @NotNull Long postId,
-            Pageable pageable) {
-        logger.info("Fetching top comments for post ID: {}", postId);
-        try {
-            var comments = commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable);
-            return ResponseEntity.ok(comments);
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid postId: {}", postId, e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid postId", e);
-        } catch (Exception e) {
-            logger.error("Error fetching top comments for post ID: {}", postId, e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching top comments", e);
-        }
-    }
+	public ResponseEntity<?> findByPostIdWithTopComments(@PathVariable("postId") @NotNull Long postId,
+			Pageable pageable) {
+		logger.info("Fetching top comments for post ID: {}", postId);
+		try {
+			var comments = commentService.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+			return ResponseEntity.ok(comments);
+		} catch (IllegalArgumentException e) {
+			logger.error("Invalid postId: {}", postId, e);
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid postId", e);
+		} catch (Exception e) {
+			logger.error("Error fetching top comments for post ID: {}", postId, e);
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching top comments", e);
+		}
+	}
 
 	/**
 	 * Retrieves the top replies for a specific parent comment, typically based on
@@ -153,33 +166,34 @@ public class CommentController {
 	@GetMapping("/comments/top/replies/{parentId}")
 	public ResponseEntity<?> findByParentIdWithTopReplies(@PathVariable("parentId") Long parentId, Pageable pageable) {
 		try {
-	        logger.info("Fetching top replies for parent comment ID: {}", parentId);
-	        
-	        // Validate the parentId
-	        if (parentId == null || parentId <= 0) {
-	            logger.error("Invalid parent comment ID: {}", parentId);
-	            return ResponseEntity.badRequest().body("Invalid parent comment ID");
-	        }
+			logger.info("Fetching top replies for parent comment ID: {}", parentId);
 
-	        // Fetch the comments
-	        List<Comment> comments = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
-	        
-	        // If no comments are found, return 404
-	        if (comments.isEmpty()) {
-	            logger.info("No comments found for parent comment ID: {}", parentId);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No comments found");
-	        }
-	        
-	        return ResponseEntity.ok(comments);
-	    } catch (CommentNotFoundException e) {
-	        logger.error("Parent comment not found: {}", parentId, e);
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
-	    } catch (DataAccessException e) {
-	        logger.error("Database error while fetching comments for parent ID: {}", parentId, e);
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error");
-	    } catch (Exception e) {
-	        logger.error("An unexpected error occurred", e);
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
-	    }	}
+			// Validate the parentId
+			if (parentId == null || parentId <= 0) {
+				logger.error("Invalid parent comment ID: {}", parentId);
+				return ResponseEntity.badRequest().body("Invalid parent comment ID");
+			}
+
+			// Fetch the comments
+			List<Comment> comments = commentService.findByParentIdOrderByCreatedAtDesc(parentId, pageable);
+
+			// If no comments are found, return 404
+			if (comments.isEmpty()) {
+				logger.info("No comments found for parent comment ID: {}", parentId);
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No comments found");
+			}
+
+			return ResponseEntity.ok(comments);
+		} catch (CommentNotFoundException e) {
+			logger.error("Parent comment not found: {}", parentId, e);
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Parent comment not found");
+		} catch (DataAccessException e) {
+			logger.error("Database error while fetching comments for parent ID: {}", parentId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error");
+		} catch (Exception e) {
+			logger.error("An unexpected error occurred", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+		}
+	}
 
 }
